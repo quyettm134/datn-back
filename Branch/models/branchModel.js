@@ -7,9 +7,9 @@ const branchSchema = new mongoose.Schema(
     },
     {
         collection: 'Branch',
-        timestamps: true,
+        timestamps: true
     }
-)
+);
 
 const Branch = mongoose.model('Branch', branchSchema);
 

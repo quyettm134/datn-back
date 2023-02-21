@@ -11,9 +11,9 @@ const orderSchema = new mongoose.Schema(
     },
     {
         collection: 'Order',
-        timestamps: true,
+        timestamps: true
     }
-)
+);
 
 const Order = mongoose.model('Order', orderSchema);
 
