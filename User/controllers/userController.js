@@ -3,6 +3,7 @@ const axios = require('axios');
 const User = require('../models/userModel');
 
 const userController = {
+    // User
     getUsers: async (req, res) => {
         try {
             const Users = await User.find();
@@ -113,6 +114,8 @@ const userController = {
         }
     },
 
+
+    // User cart
     getOneUserCart: async (req, res) => {
         const { id: _id } = req.params;
 
@@ -146,6 +149,68 @@ const userController = {
         });
     },
 
+    addItemToCart: async (req,res) => {
+        const { id: _id } = req.params;
+
+        const product = {
+            id: req.body.id,
+            quantity: req.body.quantity
+        }
+
+        const user = await User.findById(_id);
+
+        const listOfIds = user.cart.map(item => item.id);
+
+        var newCart = [...user.cart];
+        
+        if (listOfIds.includes(product.id) === true) {
+            const index = user.cart.findIndex(cartItem => cartItem.id === product.id);
+
+            newCart[index].quantity += product.quantity;
+        }
+
+        else newCart.push(product);
+
+        const updatedUser = await User.findByIdAndUpdate(
+            _id,
+            { cart: newCart },
+            { new: true }
+        );
+
+        res.json({
+            success: true,
+            data: {
+                User: updatedUser
+            }
+        });       
+    },
+
+    deleteItemFromCart: async (req, res) => {
+        const { id: _id } = req.params;
+
+        const productId = req.body.id;
+
+        const user = await User.findById(_id);
+        const newCart = user.cart.filter(item => {
+            return !productId.includes(item.id);
+        });
+
+        const updatedUser = await User.findByIdAndUpdate(
+            _id,
+            { cart: newCart },
+            { new: true }
+        );
+
+        res.json({
+            success: true,
+            data: {
+                User: updatedUser
+            }
+        });
+    },
+
+
+    // User like list
     getOneUserLikeList: async (req, res) => {
         const { id: _id } = req.params;
 
@@ -174,7 +239,81 @@ const userController = {
                 User: thisUser
             }
         });
-    }
+    },
+
+    addItemToLikeList: async (req,res) => {
+        const { id: _id } = req.params;
+
+        const productId = req.body.id;
+
+        const user = await User.findById(_id);
+
+        const listOfIds = user.like_list;
+
+        var newLikeList = [...user.like_list];
+        
+        if (listOfIds.includes(productId) === true) {
+            res.json({
+                success: false,
+                data: {
+                    message: 'Item already exists in like list'
+                }
+            })
+        }
+
+        else {
+            newLikeList.push(productId);
+
+            const updatedUser = await User.findByIdAndUpdate(
+                _id,
+                { like_list: newLikeList },
+                { new: true }
+            );
+    
+            res.json({
+                success: true,
+                data: {
+                    User: updatedUser
+                }
+            }); 
+        }            
+    },
+
+    deleteItemFromLikeList: async (req, res) => {
+        const { id: _id } = req.params;
+
+        const productId = req.body.id;
+
+        const user = await User.findById(_id);
+
+        const listOfIds = user.like_list
+
+        if (listOfIds.includes(productId) === false) {
+            res.json({
+                success: false,
+                data: {
+                    message: 'No product with that ID was found in like list'
+                }
+            })
+        } 
+
+        else {
+            const newLikeList = user.like_list.filter(item => item !== productId);
+
+            const updatedUser = await User.findByIdAndUpdate(
+                _id,
+                { like_list: newLikeList },
+                { new: true }
+            );
+
+            res.json({
+                success: true,
+                data: {
+                    User: updatedUser
+                }
+            });
+        }
+    },
 }
 
 module.exports = userController;
