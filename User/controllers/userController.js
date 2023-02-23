@@ -109,7 +109,34 @@ const userController = {
                 message: "User successfully deleted"
             });
         }
-    }
+    },
+
+    updateLikelist: async (req, res) => {
+        const { id: _id } = req.params;
+
+        // const user = req.body;
+
+        // if (!mongoose.Types.ObjectId.isValid(_id))
+        //     return res.status(500).send({
+        //         success: false,
+        //         message: "No user with that ID was found"
+        //     });
+
+        // else {
+            const updatedUser = await User.findByIdAndUpdate(
+                _id,
+                { ...user, _id },
+                { new: true }
+            );
+    
+            res.json({
+                success: true,
+                data: {
+                    updatedUser: updatedUser
+                }
+            });
+        // }
+    },
 }
 
 module.exports = userController;

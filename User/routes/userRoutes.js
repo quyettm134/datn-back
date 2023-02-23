@@ -8,5 +8,6 @@ userRoutes.get('/:id', userController.getOneUser);
 userRoutes.post('/', userController.createUser);
 userRoutes.put('/:id', userController.updateUser);
 userRoutes.delete('/:id', userController.deleteUser);
+userRoutes.put('/like/:id', userController.updateLikelist);
 
 module.exports = userRoutes;
