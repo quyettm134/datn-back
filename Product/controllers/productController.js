@@ -33,7 +33,7 @@ const productController = {
         else {
             const thisProduct = await Product.findById(_id);
     
-            res.json({
+            res.status(200).json({
                 success: true,
                 data: {
                     Product: thisProduct

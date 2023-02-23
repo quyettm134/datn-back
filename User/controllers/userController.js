@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const axios = require('axios');
 const User = require('../models/userModel');
 
 const userController = {
@@ -31,14 +32,15 @@ const userController = {
             });
 
         else {
-            const thisUser = await User.findById(_id);
-    
+            const user = await User.findById(_id);
+
             res.json({
                 success: true,
                 data: {
                     User: thisUser
                 }
             });
+                
         }
     },
 
@@ -109,6 +111,69 @@ const userController = {
                 message: "User successfully deleted"
             });
         }
+    },
+
+    getOneUserCart: async (req, res) => {
+        const { id: _id } = req.params;
+
+        const user = await User.findById(_id);
+
+        let thisUser = {
+            ...user,
+            cart: []
+        }
+
+        for(var i = 0; i < user.cart.length; i++) {
+            let response = await axios.get(`http://localhost:8086/products/${user.cart[i].id}`)
+            
+            thisUser = {
+                ...user._doc,
+                cart: [
+                    ...thisUser.cart,
+                    {
+                        product: response.data.data.Product,
+                        quantity: user.cart[i].quantity
+                    }
+                ]
+            }
+        }
+
+        res.json({
+            success: true,
+            data: {
+                User: thisUser
+            }
+        });
+    },
+
+    getOneUserLikeList: async (req, res) => {
+        const { id: _id } = req.params;
+
+        const user = await User.findById(_id);
+
+        let thisUser = {
+            ...user,
+            like_list: []
+        }
+
+        for(var i = 0; i < user.like_list.length; i++) {
+            let response = await axios.get(`http://localhost:8086/products/${user.like_list[i]}`)
+            
+            thisUser = {
+                ...user._doc,
+                like_list: [
+                    ...thisUser.like_list,
+                    response.data.data.Product,
+                ]
+            }
+        }
+
+        res.json({
+            success: true,
+            data: {
+                User: thisUser
+            }
+        });
     }
 }
 
