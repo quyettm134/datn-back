@@ -10,8 +10,12 @@ const productSchema = new mongoose.Schema(
         color: String,
         target_audience: String,
         season: String,
-        price: Number,
-        type: String,
+        price: {
+            type: Number
+        },
+        type: {
+            type: String,
+        },
         size: String,
         discountId: String
     },

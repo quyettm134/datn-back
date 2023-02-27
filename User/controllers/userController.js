@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const axios = require('axios');
 const User = require('../models/userModel');
+const Order = require('../../Order/models/orderModel');
 
 const userController = {
     // User
@@ -38,7 +39,7 @@ const userController = {
             res.json({
                 success: true,
                 data: {
-                    User: thisUser
+                    User: user
                 }
             });
                 
@@ -149,7 +150,7 @@ const userController = {
         });
     },
 
-    addItemToCart: async (req,res) => {
+    updateItemToCart: async (req,res) => {
         const { id: _id } = req.params;
 
         const product = {
@@ -167,6 +168,17 @@ const userController = {
             const index = user.cart.findIndex(cartItem => cartItem.id === product.id);
 
             newCart[index].quantity += product.quantity;
+
+            if (newCart[index].quantity <= 0) newCart = newCart.filter(cartItem => cartItem.quantity > 0);
+        }
+
+        else if (listOfIds.includes(product.id) === false && product.quantity < 0) {
+            res.json({
+                success: false,
+                data: {
+                    message: "Invalid quantity"
+                }
+            })
         }
 
         else newCart.push(product);
