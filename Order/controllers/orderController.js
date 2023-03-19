@@ -23,16 +23,16 @@ const orderController = {
     },
 
     getOneOrder: async (req, res) => {
-        const { id: _id } = req.params;
+        const orderId  = req.body.id;
 
-        if (!mongoose.Types.ObjectId.isValid(_id))
+        if (!mongoose.Types.ObjectId.isValid(orderId))
             return res.status(500).send({
                 success: false,
                 message: "No order with that ID was found"
             });
 
         else {
-            const order = await Order.findById(_id);
+            const order = await Order.findById(orderId);
 
             let thisOrder = {
                 ...order,
@@ -64,9 +64,9 @@ const orderController = {
     },
 
     getOneUserOrder: async (req,res) => {
-        const { id: user_id } = req.params;
+        const { userId } = req;
 
-        const orders = await Order.find({ user_id });
+        const orders = await Order.find({ user_id: userId });
 
         let orderList = [
             ...orders
@@ -88,22 +88,22 @@ const orderController = {
         res.json({
             success: true,
             data: {
-                UserId: user_id,
+                UserId: userId,
                 OrderList: orderList
             }
         })
     },
 
     createOrder: async (req, res) => {
-        const products_list = req.body.products;
+        const userId = req.body.userId;
+
+        let thisUser = await axios.get(`http://localhost:8080/users/${userId}`);
+
+        const products_list = thisUser.data.data.User.cart;
 
         const productIdList = products_list.map(product => {
             return product.id
         });
-
-        const userId = req.body.userId;
-
-        let thisUser = await axios.get(`http://localhost:8080/users/${userId}`);
 
         const userAddress = thisUser.data.data.User.address[0];
 

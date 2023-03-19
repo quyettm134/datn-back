@@ -1,18 +1,20 @@
 const express = require('express');
 const userController = require('../controllers/userController');
+const { verifyTokenAndRole } = require('../middlewares/jwtAuth');
 
 const userRoutes = express.Router();
 
-userRoutes.get('/', userController.getUsers);
-userRoutes.get('/:id', userController.getOneUser);
-userRoutes.post('/', userController.createUser);
-userRoutes.put('/:id', userController.updateUser);
-userRoutes.delete('/:id', userController.deleteUser);
-userRoutes.get('/:id/cart', userController.getOneUserCart);
-userRoutes.put('/:id/cart', userController.updateItemToCart);
-userRoutes.delete('/:id/cart', userController.deleteItemFromCart);
-userRoutes.get('/:id/like_list', userController.getOneUserLikeList);
-userRoutes.put('/:id/like_list', userController.addItemToLikeList);
-userRoutes.delete('/:id/like_list', userController.deleteItemFromLikeList);
+userRoutes.get('/', verifyTokenAndRole(['admin']), userController.getUsers);
+userRoutes.get('/profile', verifyTokenAndRole(['customer', 'admin', 'staff']), userController.getOneUser);
+userRoutes.post('/register', userController.createUser);
+userRoutes.post('/login', userController.userLogin);
+userRoutes.put('/update', verifyTokenAndRole(['customer', 'admin', 'staff']), userController.updateUser);
+userRoutes.delete('/:id', verifyTokenAndRole(['admin']), userController.deleteUser);
+userRoutes.get('/cart', verifyTokenAndRole(['customer']), userController.getOneUserCart);
+userRoutes.put('/cart/update', verifyTokenAndRole(['customer']), userController.updateItemToCart);
+userRoutes.delete('/cart/delete', verifyTokenAndRole(['customer']), userController.deleteItemFromCart);
+userRoutes.get('/like_list', verifyTokenAndRole(['customer']), userController.getOneUserLikeList);
+userRoutes.put('/like_list/add', verifyTokenAndRole(['customer']), userController.addItemToLikeList);
+userRoutes.delete('/like_list/delete', verifyTokenAndRole(['customer']), userController.deleteItemFromLikeList);
 
 module.exports = userRoutes;

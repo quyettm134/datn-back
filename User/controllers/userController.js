@@ -1,10 +1,44 @@
 const mongoose = require('mongoose');
 const axios = require('axios');
+const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
-const Order = require('../../Order/models/orderModel');
 
 const userController = {
     // User
+    userLogin: async (req, res) => {
+        const user = req.body;
+    
+        const existedUser = await User.findOne({
+            username: user.username,
+            password: user.password
+        });
+    
+        if (existedUser) {
+            const token = jwt.sign({
+                userId: existedUser._id,
+                role: existedUser.role
+            }, 'secret', { 
+                algorithm: 'HS256', 
+                expiresIn: '1h' }
+            );
+    
+            res.setHeader('Authorization', token);
+    
+            res.status(200).json({
+                success: true,
+                message: 'User logged in succesfully!',
+                token: token
+            })
+        }
+        
+        else {
+            res.status(400).json({
+                success: false,
+                message: 'Username or password is incorrect!'        
+            })
+        }
+    },
+
     getUsers: async (req, res) => {
         try {
             const Users = await User.find();
@@ -25,21 +59,21 @@ const userController = {
     },
 
     getOneUser: async (req, res) => {
-        const { id: _id } = req.params;
+        const { userId } = req;
 
-        if (!mongoose.Types.ObjectId.isValid(_id))
+        if (!mongoose.Types.ObjectId.isValid(userId))
             return res.status(500).send({
                 success: false,
                 message: "No user with that ID was found"
             });
 
         else {
-            const user = await User.findById(_id);
+            const user = await User.findById(userId);
 
             res.json({
                 success: true,
                 data: {
-                    User: user
+                    User: user,
                 }
             });
                 
@@ -50,47 +84,71 @@ const userController = {
         const user = req.body;
     
         const newUser = new User(user);
+
+        newUser.role = 'customer'
+
+        const existedUser = await User.findOne({
+            username: newUser.username
+        })
     
-        try {
-            await newUser.save();
-    
-            res.status(200).json({
-                success: true,
-                data: {
-                    User: newUser
-                }
-            });
-        } catch (error) {
+        if (!existedUser) {
+            try {
+                await newUser.save();
+
+                const token = jwt.sign({
+                    userId: newUser._id,
+                    role: newUser.role
+                  }, 'secret', { algorithm: 'HS256', expiresIn: '1h' });
+        
+                res.status(200).json({
+                    success: true,
+                    data: {
+                        User: newUser
+                    },
+                    token: token
+                });
+            } catch (error) {
+                res.status(500).json({
+                    success: false,
+                    message: "Create user failed",
+                    error: error
+                });
+            }
+        }
+
+        else {
             res.status(500).json({
                 success: false,
-                message: "Create user failed",
-                error: error
+                message: "Username already existed!",
             });
         }
     },
 
     updateUser: async (req, res) => {
-        const { id: _id } = req.params;
+        const { userId } = req;
 
-        const user = req.body;
+        const userInfo = { ...req.body };
 
-        if (!mongoose.Types.ObjectId.isValid(_id))
+        const user = await User.findById(userId);
+
+        if (!user) {
             return res.status(500).send({
                 success: false,
-                message: "No user with that ID was found"
+                message: "No user with that ID was found",
             });
+        }
 
         else {
             const updatedUser = await User.findByIdAndUpdate(
-                _id,
-                { ...user, _id },
+                userId,
+                { ...userInfo, userId },
                 { new: true }
             );
     
             res.json({
                 success: true,
                 data: {
-                    updatedUser: updatedUser
+                    User: updatedUser
                 }
             });
         }
@@ -118,9 +176,9 @@ const userController = {
 
     // User cart
     getOneUserCart: async (req, res) => {
-        const { id: _id } = req.params;
+        const { userId } = req;
 
-        const user = await User.findById(_id);
+        const user = await User.findById(userId);
 
         let thisUser = {
             ...user,
@@ -145,20 +203,17 @@ const userController = {
         res.json({
             success: true,
             data: {
-                User: thisUser
+                UserCart: thisUser.cart,
             }
         });
     },
 
     updateItemToCart: async (req,res) => {
-        const { id: _id } = req.params;
+        const { userId } = req;
 
-        const product = {
-            id: req.body.id,
-            quantity: req.body.quantity
-        }
+        const user = await User.findById(userId);
 
-        const user = await User.findById(_id);
+        const product = { ...req.body };
 
         const listOfIds = user.cart.map(item => item.id);
 
@@ -167,7 +222,7 @@ const userController = {
         if (listOfIds.includes(product.id) === true) {
             const index = user.cart.findIndex(cartItem => cartItem.id === product.id);
 
-            newCart[index].quantity += product.quantity;
+            newCart[index].quantity = product.quantity;
 
             if (newCart[index].quantity <= 0) newCart = newCart.filter(cartItem => cartItem.quantity > 0);
         }
@@ -184,7 +239,7 @@ const userController = {
         else newCart.push(product);
 
         const updatedUser = await User.findByIdAndUpdate(
-            _id,
+            userId,
             { cart: newCart },
             { new: true }
         );
@@ -192,23 +247,23 @@ const userController = {
         res.json({
             success: true,
             data: {
-                User: updatedUser
+                UserCart: updatedUser.cart,
             }
-        });       
+        });
     },
 
     deleteItemFromCart: async (req, res) => {
-        const { id: _id } = req.params;
+        const { userId } = req;
 
         const productId = req.body.id;
 
-        const user = await User.findById(_id);
+        const user = await User.findById(userId);
         const newCart = user.cart.filter(item => {
             return !productId.includes(item.id);
         });
 
         const updatedUser = await User.findByIdAndUpdate(
-            _id,
+            userId,
             { cart: newCart },
             { new: true }
         );
@@ -216,17 +271,17 @@ const userController = {
         res.json({
             success: true,
             data: {
-                User: updatedUser
+                UserCart: updatedUser.cart
             }
         });
     },
-
+    
 
     // User like list
     getOneUserLikeList: async (req, res) => {
-        const { id: _id } = req.params;
+        const { userId } = req;
 
-        const user = await User.findById(_id);
+        const user = await User.findById(userId);
 
         let thisUser = {
             ...user,
@@ -248,17 +303,17 @@ const userController = {
         res.json({
             success: true,
             data: {
-                User: thisUser
+                UserLikeList: thisUser.like_list
             }
         });
     },
 
     addItemToLikeList: async (req,res) => {
-        const { id: _id } = req.params;
+        const { userId } = req;
 
         const productId = req.body.id;
 
-        const user = await User.findById(_id);
+        const user = await User.findById(userId);
 
         const listOfIds = user.like_list;
 
@@ -277,7 +332,7 @@ const userController = {
             newLikeList.push(productId);
 
             const updatedUser = await User.findByIdAndUpdate(
-                _id,
+                userId,
                 { like_list: newLikeList },
                 { new: true }
             );
@@ -285,18 +340,18 @@ const userController = {
             res.json({
                 success: true,
                 data: {
-                    User: updatedUser
+                    UserLikeList: updatedUser.like_list
                 }
             }); 
         }            
     },
 
     deleteItemFromLikeList: async (req, res) => {
-        const { id: _id } = req.params;
+        const { userId } = req;
 
         const productId = req.body.id;
 
-        const user = await User.findById(_id);
+        const user = await User.findById(userId);
 
         const listOfIds = user.like_list
 
@@ -313,7 +368,7 @@ const userController = {
             const newLikeList = user.like_list.filter(item => item !== productId);
 
             const updatedUser = await User.findByIdAndUpdate(
-                _id,
+                userId,
                 { like_list: newLikeList },
                 { new: true }
             );
@@ -321,7 +376,7 @@ const userController = {
             res.json({
                 success: true,
                 data: {
-                    User: updatedUser
+                    UserLikeList: updatedUser.like_list
                 }
             });
         }

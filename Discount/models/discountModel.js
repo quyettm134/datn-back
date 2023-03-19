@@ -5,7 +5,8 @@ const discountSchema = new mongoose.Schema(
         start_date: Date,
         end_date: Date,
         employeeId: String,
-        type: String
+        type: String,
+        value: Number
     },
     {
         collection: 'Discount',
