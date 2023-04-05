@@ -75,8 +75,7 @@ const userController = {
                 data: {
                     User: user,
                 }
-            });
-                
+            });   
         }
     },
 
@@ -171,109 +170,6 @@ const userController = {
                 message: "User successfully deleted"
             });
         }
-    },
-
-
-    // User cart
-    getOneUserCart: async (req, res) => {
-        const { userId } = req;
-
-        const user = await User.findById(userId);
-
-        let thisUser = {
-            ...user,
-            cart: []
-        }
-
-        for(var i = 0; i < user.cart.length; i++) {
-            let response = await axios.get(`http://localhost:8086/products/${user.cart[i].id}`)
-            
-            thisUser = {
-                ...user._doc,
-                cart: [
-                    ...thisUser.cart,
-                    {
-                        product: response.data.data.Product,
-                        quantity: user.cart[i].quantity
-                    }
-                ]
-            }
-        }
-
-        res.json({
-            success: true,
-            data: {
-                UserCart: thisUser.cart,
-            }
-        });
-    },
-
-    updateItemToCart: async (req,res) => {
-        const { userId } = req;
-
-        const user = await User.findById(userId);
-
-        const product = { ...req.body };
-
-        const listOfIds = user.cart.map(item => item.id);
-
-        var newCart = [...user.cart];
-        
-        if (listOfIds.includes(product.id) === true) {
-            const index = user.cart.findIndex(cartItem => cartItem.id === product.id);
-
-            newCart[index].quantity = product.quantity;
-
-            if (newCart[index].quantity <= 0) newCart = newCart.filter(cartItem => cartItem.quantity > 0);
-        }
-
-        else if (listOfIds.includes(product.id) === false && product.quantity < 0) {
-            res.json({
-                success: false,
-                data: {
-                    message: "Invalid quantity"
-                }
-            })
-        }
-
-        else newCart.push(product);
-
-        const updatedUser = await User.findByIdAndUpdate(
-            userId,
-            { cart: newCart },
-            { new: true }
-        );
-
-        res.json({
-            success: true,
-            data: {
-                UserCart: updatedUser.cart,
-            }
-        });
-    },
-
-    deleteItemFromCart: async (req, res) => {
-        const { userId } = req;
-
-        const productId = req.body.id;
-
-        const user = await User.findById(userId);
-        const newCart = user.cart.filter(item => {
-            return !productId.includes(item.id);
-        });
-
-        const updatedUser = await User.findByIdAndUpdate(
-            userId,
-            { cart: newCart },
-            { new: true }
-        );
-
-        res.json({
-            success: true,
-            data: {
-                UserCart: updatedUser.cart
-            }
-        });
     },
     
 

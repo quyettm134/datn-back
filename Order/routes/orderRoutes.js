@@ -5,9 +5,9 @@ const { verifyTokenAndRole } = require('../middlewares/jwtAuth');
 const orderRoutes = express.Router();
 
 orderRoutes.get('/', orderController.getOrders);
-orderRoutes.get('/details', orderController.getOneOrder);
-orderRoutes.get('/order_list', verifyTokenAndRole(['customer']),orderController.getOneUserOrder);
-orderRoutes.post('/', orderController.createOrder);
+orderRoutes.get('/order_details/:id', orderController.getOneOrder);
+orderRoutes.get('/order_list', verifyTokenAndRole(['customer']), orderController.getOneUserOrder);
+orderRoutes.post('/', verifyTokenAndRole(['customer']), orderController.createOrder);
 orderRoutes.put('/:id', orderController.updateOrder);
 orderRoutes.delete('/:id', orderController.deleteOrder);
 

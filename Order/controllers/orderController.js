@@ -23,7 +23,7 @@ const orderController = {
     },
 
     getOneOrder: async (req, res) => {
-        const orderId  = req.body.id;
+        const { id: orderId  } = req.params;
 
         if (!mongoose.Types.ObjectId.isValid(orderId))
             return res.status(500).send({
@@ -64,7 +64,7 @@ const orderController = {
     },
 
     getOneUserOrder: async (req,res) => {
-        const { userId } = req;
+        const userId  = req.userId;
 
         const orders = await Order.find({ user_id: userId });
 
@@ -95,43 +95,33 @@ const orderController = {
     },
 
     createOrder: async (req, res) => {
-        const userId = req.body.userId;
+        const userId = req.userId;
 
-        let thisUser = await axios.get(`http://localhost:8080/users/${userId}`);
+        const products_list = req.body.products_list;
 
-        const products_list = thisUser.data.data.User.cart;
+        const total = req.body.total;
 
-        const productIdList = products_list.map(product => {
-            return product.id
+        const token = req.body.token;
+
+        let thisUser = await axios.get(`http://localhost:8080/users/profile`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
         });
 
         const userAddress = thisUser.data.data.User.address[0];
-
-        let orderTotal = 0;
-
-        for (var i = 0; i < products_list.length; i++) {
-            let response = await axios.get(`http://localhost:8086/products/${products_list[i].id}`)
-            
-            orderTotal += (response.data.data.Product.price * products_list[i].quantity);
-        }
 
         const newOrder = new Order({
             status: 'shipping',
             shipping_address: userAddress,
             order_day: Date.now(),
             product_list: products_list,
-            total: orderTotal,
+            total: total,
             user_id: userId
         });
         
         try {
             await newOrder.save();
-
-            await axios.delete(`http://localhost:8080/users/${userId}/cart`, {
-                data: {
-                    id: productIdList
-                }
-            });
 
             res.status(200).json({
                 success: true,

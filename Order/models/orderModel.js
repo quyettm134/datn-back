@@ -14,7 +14,7 @@ const orderSchema = new mongoose.Schema(
         total: {
             type: Number
         },
-        user_id: String
+        user_id: { type: mongoose.Schema.Types.ObjectId },
     },
     {
         collection: 'Order',
